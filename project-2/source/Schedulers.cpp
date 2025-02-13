@@ -1,5 +1,5 @@
 #include "../headers/Schedulers.h"
-#define DEBUG
+// #define DEBUG
 
 Scheduler::Scheduler()
 {
@@ -184,50 +184,19 @@ PCB *Dispatcher::switchcontext(int index)
         std::cout << "[DEBUG] Context switch from process (PID: " << old_pcb->pid << ") to process (PID: " << new_pcb->pid << ")" << std::endl;
     }
 #endif
-
-    //     // If the process on the CPU is the same as the old one, force the context switch
-    //     if (old_pcb != nullptr && new_pcb != nullptr)
-    //     {
-    //         if (old_pcb->pid != new_pcb->pid || old_pcb->queue_num != new_pcb->queue_num)
-    //         {
-    // #ifdef DEBUG
-    //             std::cout << "[DEBUG] Context switch from process (PID: " << old_pcb->pid << ") to process (PID: " << new_pcb->pid << ")" << std::endl;
-    // #endif
-    //             cpu->getpcb()->wait_time += 0.5; // Add context switch overhead to the new process
-    //             // Add context switch to the clock
-    //             clock->step();
-    //         }
-    //     }
-
-    //     // If the old PCB was demoted, move it to the appropriate queue (based on queue_num)
-    //     if (old_pcb != NULL)
-    //     {
-    //         // Demote the process (if not in the lowest priority queue)
-    //         if (old_pcb->queue_num < scheduler->get_num_queues() - 1)
-    //         {
-    //             ready_queue[old_pcb->queue_num + 1].add_end(*old_pcb); // Add to the next lower-priority queue
-    //         }
-    //         else
-    //         {
-    //             ready_queue[old_pcb->queue_num].add_end(*old_pcb); // Add back to the same queue if it's the lowest priority
-    //         }
-    //     }
     return old_pcb;
 }
 
 // executed every clock cycle, only if scheduler interrupts it
 void Dispatcher::execute()
 {
-    // std::cout << "execute triggered" << "\n";
     if (_interrupt)
     {
-        std::cout << "_interrupt entered" << "\n";
         PCB *old_pcb = switchcontext(scheduler->getnext());
         if (old_pcb != NULL)
         { // only consider it a switch if cpu was still working on process
-            std::cout << "context switch triggered?" << "\n";
             old_pcb->num_context++;
-            // context switch overhead os 0.5
+            // context switch overhead is 0.5
             cpu->getpcb()->wait_time += .5;
 #ifdef DEBUG
             std::cout << "[DEBUG] Context switch overhead for process (PID: " << old_pcb->pid << ") is 0.5" << std::endl;
@@ -257,6 +226,6 @@ void Dispatcher::execute()
 // routine for scheudler to interrupt it
 void Dispatcher::interrupt()
 {
-    std::cout << "[DEBUG] Interrupt triggered!" << std::endl; // Debugging output
+    std::cout << "[DEBUG] Interrupt triggered!" << std::endl;
     _interrupt = true;
 }

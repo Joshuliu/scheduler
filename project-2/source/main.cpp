@@ -9,6 +9,7 @@ using namespace std;
 
 void print_ready_queue(std::vector<DList<PCB> *> ready_queue, int num_queues)
 {
+    // prints ready queue for debugging
     for (int i = 0; i < num_queues; i++)
     {
         std::cout << "Queue " << i << ":" << std::endl;
@@ -21,6 +22,21 @@ void print_ready_queue(std::vector<DList<PCB> *> ready_queue, int num_queues)
             std::cout << "Queue is empty." << std::endl;
         }
     }
+}
+
+bool ready_queues_non_empty(std::vector<DList<PCB> *> &ready_queue, int num_queues)
+{
+#ifdef DEBUG
+    // returns if any ready queues are not empty
+    for (int i = 0; i < num_queues; i++)
+    {
+        if (ready_queue[i]->size() != 0)
+        {
+            return true; // Found a non-empty queue
+        }
+    }
+    return false;
+#endif
 }
 
 int main(int argc, char *argv[])
@@ -120,34 +136,29 @@ int main(int argc, char *argv[])
         StatUpdater stats(ready_queue, finished_queue, &clock, algorithm, argv[2], timeq);
         CPU cpu(finished_queue, &clock);
         Scheduler *scheduler;
-        if (algorithm == 4)
-        { // MLFQ
-            scheduler = new Scheduler(ready_queue, &cpu, algorithm, num_queues, time_quantum, aging_thresholds);
-        }
-        else if (algorithm == 2)
-        { // RR
-            scheduler = new Scheduler(ready_queue, &cpu, algorithm, timeq);
-        }
-        else
+        switch (algorithm)
         {
+        case 4: // MLFQ
+            scheduler = new Scheduler(ready_queue, &cpu, algorithm, num_queues, time_quantum, aging_thresholds);
+            break;
+
+        case 2: // RR
+            scheduler = new Scheduler(ready_queue, &cpu, algorithm, timeq);
+            break;
+
+        default: // For other algorithms
             scheduler = new Scheduler(ready_queue, &cpu, algorithm);
+            break;
         }
+
         Dispatcher dispatcher(&cpu, scheduler, ready_queue, &clock);
         scheduler->setdispatcher(&dispatcher);
 
         // loop will continue until no more processes are going to be generated, no more in ready queue, and cpu is done
-        int x = 1;
-        for (int i = 0; i < num_queues; i++)
-        {
-            if (ready_queue[i]->size() != 0)
-            {
-                x = 1;
-            }
-        }
-        while (!pgen.finished() || x != 0 || !cpu.isidle())
+        while (!pgen.finished() || ready_queues_non_empty(ready_queue, num_queues) || !cpu.isidle())
         {
 #ifdef DEBUG
-            cout << "[DEBUG] clock.gettime()=" << clock.gettime() << " pgen.finished()=" << pgen.finished() << " ready_queue.empty=" << x << " cpu.isidle()=" << cpu.isidle() << std::endl;
+            cout << "[DEBUG] clock.gettime()=" << clock.gettime() << " pgen.finished()=" << pgen.finished() << " cpu.isidle()=" << cpu.isidle() << std::endl;
 #endif
             pgen.generate();
             print_ready_queue(ready_queue, num_queues);
@@ -156,14 +167,6 @@ int main(int argc, char *argv[])
             cpu.execute();
             stats.execute();
             clock.step();
-            x = 0;
-            for (int i = 0; i < num_queues; i++)
-            {
-                if (ready_queue[i]->size() != 0)
-                {
-                    x = 1;
-                }
-            }
         }
 
         // final printing of performance metrics
