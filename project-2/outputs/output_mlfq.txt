@@ -1,4 +1,4 @@
-Average Waiting Time: 0 ms
-Average Turnaround Time: 0 ms
-Average Response Time: 0 ms
-Total No. of Context Switching Performed: 0
+Average Waiting Time: 7.9 ms
+Average Turnaround Time: 41.75 ms
+Average Response Time: 1.2 ms
+Total No. of Context Switching Performed: 28

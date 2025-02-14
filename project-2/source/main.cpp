@@ -6,10 +6,11 @@
 #include "../headers/CPU.h"
 #include "../headers/StatUpdater.h"
 using namespace std;
-#define DEBUG
+// #define DEBUG
 
 void print_ready_queue(std::vector<DList<PCB> *> ready_queue, int num_queues)
 {
+#ifdef DEBUG
     // prints ready queue for debugging
     for (int i = 0; i < num_queues; i++)
     {
@@ -23,11 +24,11 @@ void print_ready_queue(std::vector<DList<PCB> *> ready_queue, int num_queues)
             std::cout << "Queue is empty." << std::endl;
         }
     }
+#endif
 }
 
 bool ready_queues_non_empty(std::vector<DList<PCB> *> &ready_queue, int num_queues)
 {
-#ifdef DEBUG
     // returns if any ready queues are not empty
     for (int i = 0; i < num_queues; i++)
     {
@@ -37,7 +38,6 @@ bool ready_queues_non_empty(std::vector<DList<PCB> *> &ready_queue, int num_queu
         }
     }
     return false;
-#endif
 }
 
 int main(int argc, char *argv[])
@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
         time_quantum.resize(num_queues);
-        aging_thresholds.resize(num_queues - 1);
+        aging_thresholds.resize(num_queues);
 
         // Read time quanta
         for (int i = 0; i < num_queues; ++i)
@@ -95,18 +95,18 @@ int main(int argc, char *argv[])
         }
 
         // Read aging thresholds (one fewer than num_queues)
+        aging_thresholds[0] = 0;
         for (int i = 0; i < num_queues - 1; ++i)
         {
-            aging_thresholds[i] = std::atoi(argv[5 + num_queues + i]);
-            if (aging_thresholds[i] <= 0)
+            aging_thresholds[i + 1] = std::atoi(argv[5 + num_queues + i]);
+            if (aging_thresholds[i + 1] <= 0)
             {
                 std::cerr << "Aging threshold must be greater than zero." << std::endl;
                 return EXIT_FAILURE;
             }
         }
 
-        // Debugging output (keep for now)
-
+#ifdef DEBUG
         std::cout << "MLFQ Configuration: " << num_queues << " queues, Time quanta: ";
         for (int tq : time_quantum)
         {
@@ -118,6 +118,7 @@ int main(int argc, char *argv[])
             std::cout << at << " ";
         }
         std::cout << std::endl;
+#endif
     }
 
     // queues to hold PCBs throughout
@@ -168,7 +169,7 @@ int main(int argc, char *argv[])
             cpu.execute();
             stats.execute();
             clock.step();
-            // usleep(3 * 1000000);
+            // usleep(1 * 1000000);
         }
 
         // final printing of performance metrics

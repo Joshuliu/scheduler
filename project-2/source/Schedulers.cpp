@@ -1,5 +1,5 @@
 #include "../headers/Schedulers.h"
-#define DEBUG
+// #define DEBUG
 
 Scheduler::Scheduler()
 {
@@ -120,16 +120,49 @@ void Scheduler::rr()
 void Scheduler::mlfq()
 {
     for (int i = 0; i < num_queues; ++i)
-    { // Iterate through queues (priority order)
+    {
+        // Iterate through queues (priority order)
         if (ready_queue[i]->size() > 0)
-        {                                                                     // Check if the current queue is not empty
-            next_pcb_index = 0;                                               // Index 0 for the front of the current queue
-            ready_queue[i]->getindex(0)->queue_num = current_queue_index = i; // Store the index of the current queue
-            if (cpu->isidle() || timer <= 0)
+        {
+            // Starvation prevention logic
+            int queue_size = ready_queue[i]->size();
+            int k = 0;
+            while (i > 0 && k < queue_size) // Use while loop to handle removal properly
             {
-                dispatcher->interrupt();
-                timer = time_quantum[i];
-                return;
+                PCB *process = ready_queue[i]->getindex(k); // Get process pointer
+                if (process != nullptr)                     // Ensure process is valid
+                {
+                    if (process->wait_time >= aging_thresholds[i])
+                    {
+#ifdef DEBUG
+                        std::cout << "[DEBUG] Promoted PID " << process->pid << " (Waited @" << i << ":" << k << " for " << process->wait_time << "/" << aging_thresholds[i] << " secs)" << std::endl;
+#endif
+                        PCB moved_process = *process;
+                        moved_process.wait_time = 0; // Reset wait time
+
+                        // promote aged process
+                        ready_queue[i]->removeindex(k);
+                        ready_queue[i - 1]->add_end(moved_process);
+                        queue_size--; // Decrement queue size without incrementing k
+                    }
+                    else
+                    {
+                        k++; // Move to the next index if no removal occurred
+                    }
+                }
+            }
+
+            // Select next available queue
+            if (ready_queue[i]->size() > 0)
+            {
+                next_pcb_index = 0;                                               // Index 0 for the front of the current queue
+                ready_queue[i]->getindex(0)->queue_num = current_queue_index = i; // Store the index of the current queue
+                if (cpu->isidle() || timer <= 0)
+                {
+                    dispatcher->interrupt();
+                    timer = time_quantum[i];
+                    return;
+                }
             }
         }
     }
@@ -164,7 +197,9 @@ PCB *Dispatcher::switchcontext(int index)
     PCB *old_pcb = cpu->pcb;
     if (old_pcb != NULL)
     {
+#ifdef DEBUG
         std::cout << "[DEBUG] Old process (PID: " << old_pcb->pid << ") is being moved to ready state." << std::endl;
+#endif
         old_pcb->set_state(1);
     }
     PCB *new_pcb = new PCB(ready_queue[scheduler->getCurrentQueueIndex()]->removeindex(scheduler->getnext()));
@@ -177,7 +212,9 @@ PCB *Dispatcher::switchcontext(int index)
     if (new_pcb != NULL)
     {
         new_pcb->set_state(2);
+#ifdef DEBUG
         std::cout << "[DEBUG] New process (PID: " << new_pcb->pid << ") is being assigned to the CPU." << std::endl;
+#endif
     }
 
     cpu->pcb = new_pcb;
@@ -229,6 +266,8 @@ void Dispatcher::execute()
 // routine for scheudler to interrupt it
 void Dispatcher::interrupt()
 {
+#ifdef DEBUG
     std::cout << "[DEBUG] Interrupt triggered!" << std::endl;
+#endif
     _interrupt = true;
 }
