@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdlib.h>
+#include <unistd.h>
 #include "../headers/Clock.h"
 #include "../headers/PCBGenerator.h"
 #include "../headers/CPU.h"
@@ -167,6 +168,7 @@ int main(int argc, char *argv[])
             cpu.execute();
             stats.execute();
             clock.step();
+            // usleep(3 * 1000000);
         }
 
         // final printing of performance metrics

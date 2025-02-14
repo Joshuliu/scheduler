@@ -1,5 +1,5 @@
 #include "../headers/Schedulers.h"
-// #define DEBUG
+#define DEBUG
 
 Scheduler::Scheduler()
 {
@@ -14,7 +14,9 @@ Scheduler::Scheduler(std::vector<DList<PCB> *> rq, CPU *cp, int alg)
     cpu = cp;
     dispatcher = NULL;
     next_pcb_index = -1;
+    current_queue_index = -1;
     algorithm = alg;
+    num_queues = 1;
 }
 
 // constructor for RR alg
@@ -96,20 +98,25 @@ void Scheduler::execute()
 // simply waits for cpu to go idle and then tells dispatcher to load next in queue
 void Scheduler::fcfs()
 {
-    next_pcb_index = 0;
-    if (cpu->isidle())
-        dispatcher->interrupt();
+    if (ready_queue[0]->size() > 0)
+    {
+        ready_queue[0]->getindex(0)->queue_num = next_pcb_index = current_queue_index = 0;
+        if (cpu->isidle())
+        {
+            dispatcher->interrupt();
+        }
+    }
 }
 
 // round robin, simply uses timer and interrupts dispatcher when timer is up, schedules next in queue
 void Scheduler::rr()
 {
-    if (cpu->isidle() || timer <= 0)
-    {
-        timer = timeq;
-        next_pcb_index = 0;
-        dispatcher->interrupt();
-    }
+    // if (cpu->isidle() || timer <= 0)
+    // {
+    //     timer = timeq;
+    //     next_pcb_index = 0;
+    //     dispatcher->interrupt();
+    // }
 }
 
 // MLFQ, not implemented
